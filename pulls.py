@@ -185,56 +185,60 @@ class PullRequestReporter(object):
         return all_events
 
     def _fetch_repo(self, repo_id, github_repo, summaries):
-        retcode = self.session.get('https://api.github.com/repos/%s/pulls' % github_repo)
-        if retcode.ok:
-            pulls = json.loads(retcode.text or retcode.content)
-            now = datetime.now()
-
-            # loop through pull requests, gathering summary info into summaries
-            if self.verbose:
-                print "Processing %d pull requests" % len(pulls)
-            for pull in pulls:
-                if self.pulls and not pull['number'] in self.pulls:
-                    continue
+        page = 1
+        while True:
+            retcode = self.session.get('https://api.github.com/repos/%s/pulls?page=%d' % (github_repo, page))
+            if retcode.ok:
+                pulls = json.loads(retcode.text or retcode.content)
+                now = datetime.now()
+                # loop through pull requests, gathering summary info into summaries
                 if self.verbose:
-                    print "Processing pull request %s" % pull['number']
-                creator = pull['user']['login']
-                user_id_list = [creator]
-                created = datetime.strptime(pull['created_at'], "%Y-%m-%dT%H:%M:%SZ")
-                if 'modified_at' in pull:
-                    lastmodified = datetime.strptime(
-                        pull.get('modified_at'), "%Y-%m-%dT%H:%M:%SZ")
-                else:
-                    lastmodified = created
-                events = self._fetch_events(github_repo, pull) + \
-                         self._fetch_reviews(github_repo, pull)
-                events.sort(key=lambda x: x[2])  # Sort by event time
-                owner = None
-                last_mentioned = None
-                lastevent = created
-                for actor, action, lastevent in events:
-                    if action == "unassigned":
-                        owner = None
-                    elif action == "assigned":
-                        owner = actor
-                    elif action == "mentioned":
-                        last_mentioned = actor
+                    print "Processing %d pull requests" % len(pulls)
+                for pull in pulls:
+                    if self.pulls and not pull['number'] in self.pulls:
+                        continue
                     if self.verbose:
-                        print "Processing event %s %s" % (action, actor)
-                    if not actor in user_id_list:
-                        user_id_list.append(actor)
-                owner = owner or last_mentioned or creator
-                user_id_list.remove(owner)
-                if lastevent > lastmodified:
-                    lastmodified = lastevent
-                if self.verbose:
-                    print "Owner %s" % owner
-                summaries.append(Summary(repo=repo_id,
-                                         id=pull['number'], url=pull['html_url'],
-                                         ref=pull['base']['ref'], title=pull['title'],
-                                         refs=user_id_list, owner=owner,
-                                         creator=creator, age=now - created,
-                                         lastmod=now - lastmodified))
+                        print "Processing pull request %s" % pull['number']
+                    creator = pull['user']['login']
+                    user_id_list = [creator]
+                    created = datetime.strptime(pull['created_at'], "%Y-%m-%dT%H:%M:%SZ")
+                    if 'modified_at' in pull:
+                        lastmodified = datetime.strptime(
+                            pull.get('modified_at'), "%Y-%m-%dT%H:%M:%SZ")
+                    else:
+                        lastmodified = created
+                    events = self._fetch_events(github_repo, pull) + \
+                            self._fetch_reviews(github_repo, pull)
+                    events.sort(key=lambda x: x[2])  # Sort by event time
+                    owner = None
+                    last_mentioned = None
+                    lastevent = created
+                    for actor, action, lastevent in events:
+                        if action == "unassigned":
+                            owner = None
+                        elif action == "assigned":
+                            owner = actor
+                        elif action == "mentioned":
+                            last_mentioned = actor
+                        if self.verbose:
+                            print "Processing event %s %s" % (action, actor)
+                        if not actor in user_id_list:
+                            user_id_list.append(actor)
+                    owner = owner or last_mentioned or creator
+                    user_id_list.remove(owner)
+                    if lastevent > lastmodified:
+                        lastmodified = lastevent
+                    if self.verbose:
+                        print "Owner %s" % owner
+                    summaries.append(Summary(repo=repo_id,
+                                            id=pull['number'], url=pull['html_url'],
+                                            ref=pull['base']['ref'], title=pull['title'],
+                                            refs=user_id_list, owner=owner,
+                                            creator=creator, age=now - created,
+                                            lastmod=now - lastmodified))
+                if len(pulls)< 30:
+                    break
+                page += 1
 
     def _generate_one(self, gmail, email, summaries):
         summary_text = ''
