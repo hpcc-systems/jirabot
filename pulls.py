@@ -130,7 +130,10 @@ class PullRequestReporter(object):
             if self.verbose:
                 print "Processing %d events" % len(events)
             for event in events:
-                actor = event['actor']['login']
+                if event['actor']:
+                    actor = event['actor']['login']
+                else:
+                    actor='Anon'
                 action = event['event']
                 event_time = datetime.strptime(event['created_at'], "%Y-%m-%dT%H:%M:%SZ")
                 all_events.append((actor, action, event_time))
