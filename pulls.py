@@ -153,7 +153,6 @@ class PullRequestReporter(object):
             reviews = json.loads(retcode.text or retcode.content)
             if self.verbose:
                 print "Processing %d reviews" % len(reviews)
-            cpage = 1
             for review in reviews:
                 body = review['body']
                 mentions = re.findall(r"@(\w+)", body)
@@ -162,26 +161,28 @@ class PullRequestReporter(object):
                     all_events.append((mention, "mentioned", mention_time))
                 # Comments on reviews can also have mentions in...
                 review_id = review['id']
-                comments_url = \
-                    "https://api.github.com/repos/%s/pulls/%d/reviews/%d/comments?page=%d" % \
-                    (github_repo, pull['number'], review_id, cpage)
-                retcode = self.session.get(comments_url, \
-                    headers={'Accept':'application/vnd.github.black-cat-preview+json'})
-                comments = json.loads(retcode.text or retcode.content)
-                if self.verbose:
-                    print "Processing %d review comments" % len(comments)
-                for comment in comments:
-                    body = comment['body']
-                    mentions = re.findall(r"@(\w+)", body)
-                    comment_time = datetime.strptime(comment['created_at'], "%Y-%m-%dT%H:%M:%SZ")
-                    if 'modified_at' in comment:
-                        comment_time = datetime.strptime(review.get('modified_at'),
-                                                         "%Y-%m-%dT%H:%M:%SZ")
-                    for mention in mentions:
-                        all_events.append((mention, "mentioned", comment_time))
-                if len(comments) < 30:
-                    break
-                cpage += 1
+                cpage = 1
+                while True:
+                    comments_url = \
+                        "https://api.github.com/repos/%s/pulls/%d/reviews/%d/comments?page=%d" % \
+                        (github_repo, pull['number'], review_id, cpage)
+                    retcode = self.session.get(comments_url, \
+                        headers={'Accept':'application/vnd.github.black-cat-preview+json'})
+                    comments = json.loads(retcode.text or retcode.content)
+                    if self.verbose:
+                        print "Processing %d review comments" % len(comments)
+                    for comment in comments:
+                        body = comment['body']
+                        mentions = re.findall(r"@(\w+)", body)
+                        comment_time = datetime.strptime(comment['created_at'], "%Y-%m-%dT%H:%M:%SZ")
+                        if 'modified_at' in comment:
+                            comment_time = datetime.strptime(review.get('modified_at'),
+                                                             "%Y-%m-%dT%H:%M:%SZ")
+                        for mention in mentions:
+                           all_events.append((mention, "mentioned", comment_time))
+                    if len(comments) < 30:
+                       break
+                    cpage += 1
             if len(reviews) < 30:
                 break
             page += 1
