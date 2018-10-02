@@ -156,6 +156,9 @@ class PullRequestReporter(object):
             for review in reviews:
                 body = review['body']
                 mentions = re.findall(r"@([-A-Za-z0-9]+)", body)
+                #If the review hasn't been submitted then do not process it
+                if 'submitted_at' not in review:
+                    continue
                 mention_time = datetime.strptime(review['submitted_at'], "%Y-%m-%dT%H:%M:%SZ")
                 for mention in mentions:
                     all_events.append((mention, "mentioned", mention_time))
