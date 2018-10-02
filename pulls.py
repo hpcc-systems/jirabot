@@ -155,7 +155,7 @@ class PullRequestReporter(object):
                 print "Processing %d reviews" % len(reviews)
             for review in reviews:
                 body = review['body']
-                mentions = re.findall(r"@(\w+)", body)
+                mentions = re.findall(r"@([-A-Za-z0-9]+)", body)
                 mention_time = datetime.strptime(review['submitted_at'], "%Y-%m-%dT%H:%M:%SZ")
                 for mention in mentions:
                     all_events.append((mention, "mentioned", mention_time))
@@ -173,7 +173,7 @@ class PullRequestReporter(object):
                         print "Processing %d review comments" % len(comments)
                     for comment in comments:
                         body = comment['body']
-                        mentions = re.findall(r"@(\w+)", body)
+                        mentions = re.findall(r"@([-A-Za-z0-9]+)", body)
                         comment_time = datetime.strptime(comment['created_at'], "%Y-%m-%dT%H:%M:%SZ")
                         if 'modified_at' in comment:
                             comment_time = datetime.strptime(review.get('modified_at'),
