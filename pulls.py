@@ -55,11 +55,17 @@ class PullRequestReporter(object):
         for repo in config.items('repositories'):
             self.repositories[repo[0]] = repo[1]
 
-        # Can restrict to specified PRs (mostly for debugging purposes
+        # Can restrict to specified PRs (mostly for debugging purposes)
         self.pulls = {}
         if config.has_section('pulls'):
             for pull in config.items('pulls'):
                 self.pulls[int(pull[0])] = pull[1]
+
+        # Can suppress specified PRs
+        self.ignored = {}
+        if config.has_section('ignore'):
+            for pull in config.items('ignore'):
+                self.ignored[int(pull[0])] = pull[1]
 
         self.emails = {}
         if config.has_section('emails'):
@@ -200,6 +206,8 @@ class PullRequestReporter(object):
                     print "Processing %d pull requests" % len(pulls)
                 for pull in pulls:
                     if self.pulls and not pull['number'] in self.pulls:
+                        continue
+                    if self.ignored and pull['number'] in self.ignored:
                         continue
                     if self.verbose:
                         print "Processing pull request %s" % pull['number']
