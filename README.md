@@ -1,2 +1,4 @@
 # jirabot
+![Build Status](https://codebuild.us-east-2.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiNGpMamwwclNrN0N6aG1ZSFZ6RlcwVlRLS3NkOHh2VndTRFVoRmcreWgyM24yRyt6ejNnblNUMVlXbzBIYXFyVjlBTW1qRG1yZFBidzBRMG5waGFKUXlJPSIsIml2UGFyYW1ldGVyU3BlYyI6ImtTblBQaXJkMUowOXNWYkkiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master)
+
 Tool for making Jira and GitHub play together
